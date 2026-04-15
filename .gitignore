@@ -36,3 +36,8 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+
+# --- Local / private briefs (not part of repo) ---
+Interview project for Yanglab.md
+presentation_script.md
+Output_of_acne_detection_and_cross_domain_classification.ipynb

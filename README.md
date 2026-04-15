@@ -21,7 +21,7 @@ This project has two parts:
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
 | Source code (organized, runnable)                                  | `acne_detection_and_cross_domain_classification.ipynb`                   |
 | How to run                                                         | `README.md` (this file)                                                  |
-| 1–2 page write-up (models, preprocessing, training/eval, findings) | `report.pdf` (compiled from `report.tex`; figures live under `figures/`) |
+| 1–2 page write-up (models, preprocessing, training/eval, findings) | `report.pdf` (compile from `report.tex` with `pdflatex` if needed; figures under `figures/`) |
 
 
 ---
@@ -35,6 +35,7 @@ This project has two parts:
   - Upload `kaggle.json` to `~/.kaggle/` and set permissions, **or**
   - Use a **Kaggle API token** / `kagglehub` login flow as in [kagglehub docs](https://github.com/Kaggle/kagglehub) (if download fails, this is usually why).
 - **Run order:** Run cells **top to bottom** once per fresh runtime. Skipping training cells will leave variables undefined downstream.
+- **Colab storage:** Everything under `/content/` is **session-local**. Save any weights, `results.csv`, or figures you need before the runtime disconnects, or re-run training when you start fresh.
 
 ---
 
@@ -123,6 +124,8 @@ Typical saved artifacts include:
 - This is a Colab notebook and uses `subprocess` to run shell commands via a `run_cmd` helper.
 - For security best practice, set `ROBOFLOW_API_KEY` as an environment variable.
 - Re-run evaluation cells after training to refresh final numbers used in the report.
+- **YOLO table metrics** come from Ultralytics `runs/**/results.csv` after YOLO training. If that file is missing in a new session, the notebook may fall back to placeholder numbers—after a full YOLO train, the printed table reflects the real run.
+- **DermNet vs patch labels:** evaluation remaps class indices (`acne` is not the same index in `ImageFolder` for patches vs DermNet). Follow the notebook’s eval cells; do not swap labels by hand.
 
 ---
 
@@ -139,7 +142,7 @@ Typical saved artifacts include:
 
 - **Patches** from ACNE04 (positive / negative crops).
 - **DermNet** binary test (**acne** vs **non-acne**); uses full test set for evaluation.
-- **Domain adaptation:** face-pretrained network + stronger augmentation, **histogram matching**, **pseudo-labeling** on 20 unlabeled train samples (per prompt).
+- **Domain adaptation:** face-pretrained network + stronger augmentation, **histogram matching**, **pseudo-labeling** on 20 unlabeled **train** samples for development (per prompt). Optional style transfer (e.g. CycleGAN) from the brief is **not** implemented here.
 - Metrics: **Accuracy, F1, AUROC** on DermNet; **Grad-CAM** on 10+ test images (three adapted checkpoints).
 - **Reflection** markdown summarizes transfer quality and what helped or hurt.
 

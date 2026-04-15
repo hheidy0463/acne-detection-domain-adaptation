@@ -44,15 +44,15 @@ This project tackles two connected problems on dermatology imagery: (1) detectin
 
 \subsection{Models}
 
-I trained two detectors spanning classic vs.\ modern: \textbf{Faster R-CNN} (Ren et al., 2015) --- two-stage, ResNet-50 FPN, COCO-pretrained --- and \textbf{YOLOv5s} (Ultralytics) --- single-stage YOLO lineage. YOLOv5 was chosen over heavier detectors (e.g.\ DINO-DETR) for efficiency and strong community baselines on small objects. YOLOv5 uses native multi-class labels (papules, pustules, whitehead/blackhead); Faster R-CNN uses one ``acne'' class; box-level mAP/IoU remain comparable.
+I trained two detectors spanning classic vs.\ modern: \textbf{Faster R-CNN} (Ren et al., 2015) --- two-stage, ResNet-50 FPN, COCO-pretrained --- and \textbf{YOLOv5s} (Ultralytics) --- single-stage YOLO lineage. YOLOv5 was chosen over heavier detectors (e.g.\ DINO-DETR) for efficiency and strong community baselines on small objects. The Roboflow YOLO head follows the export's class list; Faster R-CNN uses a two-class COCO head (background, acne). For matched IoU and the greedy P/R summary, predictions are treated as one lesion class so both detectors are compared on the same boxes.
 
 \subsection{Data, training, evaluation}
 
-ACNE04 (Roboflow): YOLO + COCO exports for fair splits. Patched \texttt{data.yaml} with absolute paths. \textbf{YOLOv5:} 50 epochs, 640px, batch 16, \texttt{yolov5s.pt}. \textbf{Faster R-CNN:} 10 epochs, SGD lr $0.005$, momentum $0.9$, wd $5{\times}10^{-4}$, batch 4, two classes. Evaluated on COCO test with \path{torchmetrics.MeanAveragePrecision}; greedy matching (conf ${>}0.25$, IoU $\geq 0.5$) for Precision@0.5, Recall@0.5, mean matched IoU@0.5. YOLO metrics from \texttt{results.csv}; matched IoU recomputed via \texttt{torch.hub} for parity.
+ACNE04 (Roboflow): YOLO + COCO exports for fair splits. Patched \texttt{data.yaml} with absolute paths. \textbf{YOLOv5:} 50 epochs, 640px, batch 16, \texttt{yolov5s.pt}. \textbf{Faster R-CNN:} 10 epochs, SGD lr $0.005$, momentum $0.9$, wd $5{\times}10^{-4}$, batch 4, two classes. Faster R-CNN mAP and greedy Precision/Recall/mean matched IoU@0.5 are on the \textbf{COCO test} split (\path{torchmetrics.MeanAveragePrecision}, conf ${>}0.25$, IoU $\geq 0.5$). YOLO mAP@0.5, mAP@0.5:0.95, Precision, and Recall are the \textbf{last-epoch validation} metrics from Ultralytics \texttt{results.csv} (YOLO's val split in \texttt{data.yaml}), while YOLO mean matched IoU@0.5 is recomputed on the \textbf{same COCO test images} as Faster R-CNN via \texttt{torch.hub} for a fair localization comparison.
 
 \subsection{Visualization}
 
-Figure~\ref{fig:det-both} shows six test images per detector. YOLOv5 shows per-subtype labels; Faster R-CNN shows red boxes with confidences mostly 0.6--0.95 (higher recall in Table~\ref{tab:det}); YOLOv5 boxes appear slightly tighter (higher mean IoU).
+Figure~\ref{fig:det-both} shows six test images per detector. YOLOv5 shows the export's class names where present; Faster R-CNN shows red boxes with confidences mostly 0.6--0.95 (higher test recall in Table~\ref{tab:det}); YOLOv5 achieves slightly higher mean matched IoU@0.5 on the shared COCO test pass.
 
 \begin{figure*}[t]
 \centering
@@ -80,7 +80,7 @@ Positive/negative $64{\times}64$ patches from ACNE04 boxes (equal counts); box s
 
 \subsection{Domain adaptation}
 
-(1)~\textbf{\texttt{model\_cls2}:} InceptionResnetV1 VGGFace2 (\texttt{facenet-pytorch}), $160{\times}160$, stronger aug.\ ($45^\circ$ rot., jitter), class weights $[1.0,5.0]$. (2)~\textbf{\texttt{model\_cls3}:} Per-channel histogram matching to random DermNet refs (from 20 unlabeled dev samples), then FaceNet retrain. (3)~\textbf{\texttt{model\_cls4}:} Pseudo-labels from \texttt{model\_cls3} on 10 acne + 10 other train images; top-$K{=}5$ per class; 5 epochs fine-tune at $10^{-5}$.
+(1)~\textbf{\texttt{model\_cls2}:} InceptionResnetV1 VGGFace2 (\texttt{facenet-pytorch}), $160{\times}160$, stronger aug.\ ($45^\circ$ rot., jitter), class weights $[1.0,5.0]$. (2)~\textbf{\texttt{model\_cls3}:} Per-channel histogram matching: each patch is matched to a random reference image from the DermNet \textbf{train} split (acne folder vs.\ pooled non-acne folders), then FaceNet is retrained on the matched patches. (3)~\textbf{\texttt{model\_cls4}:} Pseudo-labels from \texttt{model\_cls3} on \textbf{20 unlabeled DermNet train} images (10 from the acne-related folder + 10 from other folders, shuffled); keep top-$K{=}5$ confident predictions per predicted class; 5 epochs fine-tune at $10^{-5}$.
 
 \subsection{Evaluation}
 
@@ -103,11 +103,11 @@ Recall@0.5 & 0.2840 & \textbf{0.4467} \\
 Mean IoU@0.5 (matched) & \textbf{0.6323} & 0.6218 \\
 \bottomrule
 \end{tabular}
-\caption{Detection on ACNE04 test (COCO split).}
+\caption{Detection on ACNE04. Faster R-CNN rows are on the COCO \textbf{test} split. YOLO mAP/P/R are from the training run's \textbf{val} split (\texttt{results.csv}); YOLO mean matched IoU@0.5 is on the COCO \textbf{test} split (same images as Faster R-CNN).}
 \label{tab:det}
 \end{table*}
 
-Table~\ref{tab:det} summarizes Part~1. Similar mAP@0.5 (${\sim}0.21$--$0.23$); Faster R-CNN \textbf{recalls} more (0.45 vs.\ 0.28); YOLOv5 is more \textbf{precise} and slightly tighter boxes. Recall favors counting tasks; precision/speed favors real-time use.
+Table~\ref{tab:det} summarizes Part~1. mAP@0.5 is similar across detectors (${\sim}0.21$--$0.23$) but is \textit{not} measured on identical splits for YOLO vs.\ Faster R-CNN (see caption). On the shared test images, mean matched IoU@0.5 is nearly tied. Faster R-CNN shows higher \textbf{test} recall under the greedy matcher (0.45 vs.\ 0.28 for YOLO's val recall), but the val/test asymmetry means that gap is only directional, not definitive.
 
 \begin{table*}[t]
 \centering
@@ -117,17 +117,17 @@ Table~\ref{tab:det} summarizes Part~1. Similar mAP@0.5 (${\sim}0.21$--$0.23$); F
 \toprule
 Model & Acc. & F1 & AUROC & Thr. \\
 \midrule
-Baseline (ResNet-18) & 0.6661 & 0.2057 & 0.6471 & 0.3279 \\
-FaceNet + Aug. & 0.7347 & 0.1841 & 0.5982 & 0.9592 \\
-Aug + Hist.\ match & 0.7025 & 0.2076 & \textbf{0.6708} & 0.1944 \\
-Aug + HM + Pseudo & 0.6397 & 0.2061 & 0.6477 & 0.2429 \\
+Baseline (ResNet-18) & 0.5313 & 0.1917 & 0.6174 & 0.0138 \\
+FaceNet + Aug. & 0.5632 & 0.1756 & 0.5832 & 0.3313 \\
+Aug + Hist.\ match & 0.6590 & 0.1909 & 0.6275 & 0.4257 \\
+Aug + HM + Pseudo & 0.6734 & 0.1937 & 0.6246 & 0.7781 \\
 \bottomrule
 \end{tabular}
-\caption{DermNet binary test (acne vs.\ non-acne).}
+\caption{DermNet binary test (acne vs.\ non-acne), one Colab run (single seed).}
 \label{tab:cls}
 \end{table*}
 
-Table~\ref{tab:cls} reports Part~2 on the full DermNet binary test set (accuracy, F1, AUROC, and F1-optimal threshold per checkpoint).
+Table~\ref{tab:cls} reports Part~2 on the full DermNet binary test set (accuracy, F1, AUROC, and F1-optimal threshold from the PR sweep in \texttt{evaluate\_on\_dermnet}).
 
 \subsection{Grad-CAM}
 
@@ -159,11 +159,13 @@ Grad-CAM on \texttt{model\_cls2}--\texttt{model\_cls4}: 10 DermNet test images e
 
 \section{Analysis (reflection)}
 
-\textbf{What helped.} As Table~\ref{tab:cls} shows, histogram matching yielded best AUROC (0.6708), matching the photographic ACNE04$\to$DermNet gap seen in the 20 unlabeled samples. FaceNet + aug.\ raised accuracy (0.7347) but \textit{lowered} AUROC (0.5982) and pushed the F1 threshold to 0.96 --- a conservative classifier that mostly wins on the 1:22 majority class. Pseudo-labeling on 20 images \textit{hurt} vs.\ HM alone; too little signal.
+\textbf{Transfer headline.} AUROC stays in a narrow band (roughly $0.58$--$0.63$); no adaptation clearly beats the ResNet-18 baseline in a way I would trust at single-seed (re-runs shifted AUROC by ${\sim}0.04$ in development). Histogram matching nudges AUROC slightly above baseline here, but the margin is small enough to be noise.
 
-\textbf{Challenges / failure modes.} Low F1 (${\sim}0.2$) everywhere: imbalance + patch$\to$full-image gap. Heatmaps (Fig.~\ref{fig:gradcam-all}) show diffuse or mis-localized attention; \texttt{cls4} can be sharp but wrong. Several panels attend near the \textbf{DermNet.com watermark} (shortcut learning). Thresholds vary widely (0.19--0.96) --- poor calibration across runs.
+\textbf{Accuracy vs.\ AUROC.} Pseudo-labeling reaches the highest accuracy (0.67 vs.\ 0.53 baseline) yet AUROC remains flat; the F1-optimal threshold jumps to $0.78$, so the model rarely predicts acne unless nearly certain---most ``accuracy'' comes from the easy non-acne majority under $1{:}22$ imbalance. This is threshold gaming, not a cleaner ROC.
 
-\textbf{Next steps.} More pseudo-labels; DANN/CORAL-style alignment; balanced sampling / focal loss + PR-AUC; remove/crop watermarks.
+\textbf{Grad-CAM / failure modes.} Across 30 panels (10 images $\times$ three FaceNet checkpoints), attention repeatedly overlaps the \textbf{DermNet.com watermark}. The shortcut persists after histogram matching and pseudo-labeling, which helps explain why adaptation did not produce a robust AUROC gain: all runs can exploit the same artifact. Low F1 (${\sim}0.19$) across conditions reflects imbalance plus the patch$\to$full-image gap.
+
+\textbf{Next steps.} Inpaint or remove watermarks; report PR-AUC; balanced sampling or focal loss; DANN/CORAL on features; multi-seed runs before claiming method rank order.
 
 \section*{References}
 {\footnotesize
