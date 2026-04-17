@@ -26,7 +26,7 @@
 \setlength{\columnsep}{0.22in}
 
 \title{\vspace{-1.7em}Acne Detection and Cross-Domain Classification --- Report\vspace{-0.7em}}
-\author{}
+\author{Heidy Hernandez}
 \date{}
 
 \begin{document}
@@ -161,7 +161,7 @@ Grad-CAM is shown for \texttt{model\_cls2}--\texttt{model\_cls4} on 10 DermNet t
 
 \textbf{Transfer headline.} AUROC remains in a narrow band ($0.59$--$0.63$). Histogram matching is best here (0.6340), only $+0.017$ over baseline (0.6169), so the gain is suggestive, not conclusive, at single-seed.
 
-\textbf{Accuracy vs.\ AUROC.} Augmentation-only has highest accuracy (0.7714) but worst AUROC (0.5883) and threshold 0.9252, indicating majority-class bias rather than better acne discrimination. F1 stays low (${ \sim }0.19$).
+\textbf{Accuracy vs.\ AUROC.} Augmentation-only has highest accuracy (0.7714) but worst AUROC (0.5883) and threshold 0.9252, indicating majority-class bias rather than better acne discrimination. F1 stays low F1 stays low ($\sim 0.19$).
 
 \textbf{Grad-CAM / failure modes.} Across 30 panels, attention repeatedly overlaps the \textbf{DermNet.com watermark}. This shortcut persists after histogram matching and pseudo-labeling, consistent with weak AUROC separation. Low F1 also reflects imbalance and patch$\to$full-image mismatch.
 

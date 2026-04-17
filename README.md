@@ -124,7 +124,7 @@ Typical saved artifacts include:
 - This is a Colab notebook and uses `subprocess` to run shell commands via a `run_cmd` helper.
 - For security best practice, set `ROBOFLOW_API_KEY` as an environment variable.
 - Re-run evaluation cells after training to refresh final numbers used in the report.
-- **YOLO table metrics** come from Ultralytics `runs/**/results.csv` after YOLO training. If that file is missing in a new session, the notebook may fall back to placeholder numbers—after a full YOLO train, the printed table reflects the real run.
+- **YOLO table metrics** come from Ultralytics `runs/**/results.csv` after YOLO training. If that file is missing in a new session, the notebook may fall back to placeholder numbers. After a full YOLO train, the printed table reflects the real run.
 - **DermNet vs patch labels:** evaluation remaps class indices (`acne` is not the same index in `ImageFolder` for patches vs DermNet). Follow the notebook’s eval cells; do not swap labels by hand.
 
 ---
@@ -133,7 +133,7 @@ Typical saved artifacts include:
 
 **Part 1 — ACNE04 detection**
 
-- Two detectors (**YOLOv5** + **Faster R-CNN**), classic vs modern single-stage.
+- Two detectors: **YOLOv5** (one-stage) and **Faster R-CNN** (two-stage, proposal-based).
 - Metrics: **mAP**, **Precision / Recall**, **IoU** (including matched IoU summary where implemented).
 - **Bounding-box visualizations** on sample test images.
 - **References** in the notebook justify model choices (Faster R-CNN, YOLO line, COCO/mAP conventions).
@@ -145,4 +145,3 @@ Typical saved artifacts include:
 - **Domain adaptation:** face-pretrained network + stronger augmentation, **histogram matching**, **pseudo-labeling** on 20 unlabeled **train** samples for development (per prompt). Optional style transfer (e.g. CycleGAN) from the brief is **not** implemented here.
 - Metrics: **Accuracy, F1, AUROC** on DermNet; **Grad-CAM** on 10+ test images (three adapted checkpoints).
 - **Reflection** markdown summarizes transfer quality and what helped or hurt.
-
